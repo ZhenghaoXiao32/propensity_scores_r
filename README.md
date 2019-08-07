@@ -1,2 +1,4 @@
 # propensity_scores_r
-propensity score analysis
+Propensity score analysis
+
+Currently finished ATT and ATE on weighting, ATT on stratification.
