@@ -16,7 +16,7 @@ library(rbounds)
 
 patient <- read_excel("patientdata.xlsx")
 str(patient)
-
+#====================Data imputation=====================================#
 # all the data looks good, 
 # but some of the kg is 0, which is weird, we should replace it with NA
 patient$kg <- na_if(patient$kg, 0)
@@ -64,6 +64,7 @@ complete_data5 <- complete(imputed_data, 5)
 all_imputations <- imputationList(list(complete_data1, complete_data2, complete_data3,
                                        complete_data4, complete_data5))
 
+#=========================Get ropensity cores==============================================#
 ### after imputation finished, we can first use logistic regression to get propensity scores
 # let's get our formula first:
 # this is just a test formula with all possible covariates
@@ -265,7 +266,7 @@ densityplot( ~ p_scores | imputation, data = all_imputations_stacked,
 bwplot(p_scores ~ surgerytype | imputation, data = all_imputations_stacked, lwd = 2,
         ylab = "Propensity Scores by logistic regression", auto.key = TRUE)
 
-
+#=================================Propensity scores weighting=======================#
 #### weighting
 
 ## for single imputation data:
@@ -482,7 +483,7 @@ sens_att <- treatSens(formula = died ~ surgerytype + p_scores +
 # but for now, the treatSens function can only deal with continuous ourcome variable
 # so I gave it up.
 
-
+#=========================Propensity score stratification====================#
 ### stratification
 
 # Stratification of ATT with logistic regression propensity scores
@@ -651,5 +652,5 @@ sens_strat <- treatSens(formula = died ~ surgerytype + p_scores +
                       weights = stratum_working$norm_norm_weight, data = stratum_working)
 
 
-
+#================================Propensity scores matching==========================#
 
