@@ -13,12 +13,22 @@ library(MatchIt)
 library(optmatch)
 library(rgenoud)
 library(rbounds)
-
+setwd("~/Documents/GitHub/propensity_scores_r")
 patient <- read_excel("patientdata.xlsx")
 str(patient)
+head(patient, n = 10)
 #====================Data imputation=====================================#
-# all the data looks good, 
-# but some of the kg is 0, which is weird, we should replace it with NA
+# all the data looks good,  
+summary(patient$kg)
+ggplot(patient, aes(kg)) +
+   geom_histogram(bins = 50, color = "white")
+# but some of the kg is 0, which is weird,
+# as the plot shows, the majority of the kg column is between 50 to 100 kg,
+# although I have no knowledge about how this data is collected, according to the 
+# density plot, I can make a guess that those 0s are of missing data instead of real 
+# world data. 
+# we should replace it with NA first:
+
 patient$kg <- na_if(patient$kg, 0)
 
 # check how many NA we have in kg column
@@ -46,11 +56,14 @@ str(patient_adj)
 
 
 # use multiple imputation to replace NAs in kg column
-
+# impute variables by from least missing to most missing
+# Using multiple imputation by chained equations
+# with predictive mean matching ("pmm") as the univariate imputation method
+# m is the amount of imputation, set a seed for reproducibility
 imputed_data <- mice(patient_adj, m = 5, maxit = 50, method = "pmm", seed = 500)
 
 summary(imputed_data)
-
+# have a look of the imputed data:
 imputed_data$imp$kg
 
 complete_data1 <- complete(imputed_data, 1)
