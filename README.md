@@ -1,7 +1,6 @@
-# propensity_scores_r
-## Propensity score analysis
+# Propensity score analysis using R
 
-### Contents
+## Contents
 - [x] Propensity scores weighting for ATT
 - [x] Propensity scores weighting for ATE
 - [x] Propensity scores stratification for ATT
@@ -9,5 +8,5 @@
 - [ ] Propensity scores matching for ATT
 - [ ] Propensity scores matching for ATE
 
-### Maintenances
+## Maintenances
 - [ ] Fix unclear variable names in stratification part
