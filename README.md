@@ -1,7 +1,13 @@
 # propensity_scores_r
-Propensity score analysis
+## Propensity score analysis
 
-Currently finished ATT and ATE on propensity scores weighting, ATT on propensity scores stratification.
-Need to add PS matching and ATE on PS stratification
+### Contents
+- [x] Propensity scores weighting for ATT
+- [x] Propensity scores weighting for ATE
+- [x] Propensity scores stratification for ATT
+- [ ] Propensity scores stratification for ATE
+- [ ] Propensity scores matching for ATT
+- [ ] Propensity scores matching for ATE
 
-Some variables naming in the startificatioin part is confusing, needed to be fixed.
+### Maintenances
+- [ ] Fix unclear variable names in stratification part
