@@ -554,31 +554,30 @@ summary(strat_diff_gbm1)
 # for better covariate balance
 
 # marginal mean weighting through stratification for ATT 
-stratum_working <- match.data(stratification)
-stratum_working_rf <- match.data(stratification_rf)
-stratum_working_gbm <- match.data(stratification_gbm)
+stratum <- match.data(stratification)
+stratum_rf <- match.data(stratification_rf)
+stratum_gbm <- match.data(stratification_gbm)
 
 # for logistic regression propensity scores
-design_norm <- svydesign(ids = ~0, data = stratum_working)
+design <- svydesign(ids = ~0, data = stratum)
 
-ntreat_norm <- data.frame(table(stratum_working$subclass[stratum_working$surgerytype == 1]))
-names(ntreat_norm) <- c("subclass", "N.1s")
-ncontrol_norm <- data.frame(table(stratum_working$subclass[stratum_working$surgerytype == 0]))
-names(ncontrol_norm) <- c("subclass", "N.0s")
+ntreat <- data.frame(table(stratum$subclass[stratum$surgerytype == 1]))
+names(ntreat) <- c("subclass", "N.1s")
+ncontrol <- data.frame(table(stratum$subclass[stratum$surgerytype == 0]))
+names(ncontrol) <- c("subclass", "N.0s")
 
-scounts <- merge(ntreat_norm, ncontrol_norm)
-stratum_working <-merge(stratum_working, scounts)
-propt_norm <- svymean(~factor(surgerytype), design_norm)
+scounts <- merge(ntreat, ncontrol)
+stratum <-merge(stratum, scounts)
+propt <- svymean(~factor(surgerytype), design)
 
-stratum_working$w_norm <- with(stratum_working, 
-                               ifelse(surgerytype == 1, 1, 
-                                      stratum_working$N.1s * propt_norm[1] / stratum_working$N.0s * propt_norm[2]))
+stratum$w <- with(stratum, ifelse(surgerytype == 1, 1, 
+                                  stratum$N.1s * propt[1] / stratum$N.0s * propt[2]))
 
-xtabs(~w_norm + subclass, stratum_working)
+xtabs(~w + subclass, stratum)
 
 # covariate balance check:
-stratum_working$norm_norm_weight <- stratum_working$w_norm / mean(stratum_working$w_norm)
-norm_table <- bal.stat(stratum_working, estimand = "ATT", w.all = stratum_working$norm_norm_weight,
+stratum$norm_weight <- stratum$w / mean(stratum$w)
+norm_table <- bal.stat(stratum, estimand = "ATT", w.all = stratum$norm_weight,
                        vars = cov_names_final, sampw = 1, get.ks = FALSE,
                        treat.var = "surgerytype", multinom = FALSE)
 round(norm_table$results[, 1:5], 3)
@@ -587,25 +586,24 @@ summary(abs(norm_table$results[, 5]))
 
 
 # for random forest propensity scores
-design_norm_rf <- svydesign(ids = ~0, data = stratum_working_rf)
+design_rf <- svydesign(ids = ~0, data = stratum_rf)
 
-ntreat_norm_rf <- data.frame(table(stratum_working_rf$subclass[stratum_working_rf$surgerytype == 1]))
-names(ntreat_norm_rf) <- c("subclass", "N.1s")
-ncontrol_norm_rf <- data.frame(table(stratum_working_rf$subclass[stratum_working_rf$surgerytype == 0]))
-names(ncontrol_norm_rf) <- c("subclass", "N.0s")
+ntreat_rf <- data.frame(table(stratum_rf$subclass[stratum_rf$surgerytype == 1]))
+names(ntreat_rf) <- c("subclass", "N.1s")
+ncontrol_rf <- data.frame(table(stratum_rf$subclass[stratum_rf$surgerytype == 0]))
+names(ncontrol_rf) <- c("subclass", "N.0s")
 
-scounts_rf <- merge(ntreat_norm_rf, ncontrol_norm_rf)
-stratum_working_rf <-merge(stratum_working_rf, scounts_rf)
-propt_norm_rf <- svymean(~factor(surgerytype), design_norm_rf)
+scounts_rf <- merge(ntreat_rf, ncontrol_rf)
+stratum_rf <-merge(stratum_rf, scounts_rf)
+propt_rf <- svymean(~factor(surgerytype), design_rf)
 
-stratum_working_rf$w_norm <- with(stratum_working_rf, 
-                                      ifelse(surgerytype == 1, 1, 
-                                             stratum_working_rf$N.1s * propt_norm_rf[1] / stratum_working_rf$N.0s * propt_norm_rf[2]))
+stratum_rf$w <- with(stratum_rf, ifelse(surgerytype == 1, 1, 
+                                        stratum_rf$N.1s * propt_rf[1] / stratum_rf$N.0s * propt_rf[2]))
 
-xtabs(~w_norm + subclass, stratum_working_rf)
+xtabs(~w + subclass, stratum_rf)
 # Covariate balance check
-stratum_working_rf$rf_norm_weight <- stratum_working_rf$w_norm / mean(stratum_working_rf$w_norm)
-rf_table <- bal.stat(stratum_working_rf, estimand = "ATT", w.all = stratum_working_rf$rf_norm_weight,
+stratum_rf$rf_weight <- stratum_rf$w / mean(stratum_rf$w)
+rf_table <- bal.stat(stratum_rf, estimand = "ATT", w.all = stratum_rf$rf_weight,
                          vars = cov_names_final, sampw = 1, get.ks = FALSE,
                          treat.var = "surgerytype", multinom = FALSE)
 
@@ -613,26 +611,26 @@ summary(abs(rf_table$results[, 5]))
 # this one is still not good 
 
 # for generalize boosted modeling propensity scores:
-design_norm_gbm <- svydesign(ids = ~0, data = stratum_working_gbm)
+design_gbm <- svydesign(ids = ~0, data = stratum_gbm)
 
-ntreat_norm_gbm <- data.frame(table(stratum_working_gbm$subclass[stratum_working_gbm$surgerytype == 1]))
-names(ntreat_norm_gbm) <- c("subclass", "N.1s")
-ncontrol_norm_gbm <- data.frame(table(stratum_working_gbm$subclass[stratum_working_gbm$surgerytype == 0]))
-names(ncontrol_norm_gbm) <- c("subclass", "N.0s")
+ntreat_gbm <- data.frame(table(stratum_gbm$subclass[stratum_gbm$surgerytype == 1]))
+names(ntreat_gbm) <- c("subclass", "N.1s")
+ncontrol_gbm <- data.frame(table(stratum_gbm$subclass[stratum_gbm$surgerytype == 0]))
+names(ncontrol_gbm) <- c("subclass", "N.0s")
 
-scounts_gbm <- merge(ntreat_norm_gbm, ncontrol_norm_gbm)
-stratum_working_gbm <-merge(stratum_working_gbm, scounts_gbm)
-propt_norm_gbm <- svymean(~factor(surgerytype), design_norm_gbm)
+scounts_gbm <- merge(ntreat_gbm, ncontrol_gbm)
+stratum_gbm <-merge(stratum_gbm, scounts_gbm)
+propt_gbm <- svymean(~factor(surgerytype), design_gbm)
 
-stratum_working_gbm$w_norm <- with(stratum_working_gbm, 
+stratum_gbm$w <- with(stratum_gbm, 
                                   ifelse(surgerytype == 1, 1, 
-                                         stratum_working_gbm$N.1s * propt_norm_gbm[1] / stratum_working_gbm$N.0s * propt_norm_gbm[2]))
+                                         stratum_gbm$N.1s * propt_gbm[1] / stratum_gbm$N.0s * propt_gbm[2]))
 
-xtabs(~w_norm + subclass, stratum_working_gbm)
+xtabs(~w + subclass, stratum_gbm)
 
 # Covariate balance check:
-stratum_working_gbm$gbm_norm_weight <- stratum_working_gbm$w_norm / mean(stratum_working_gbm$w_norm)
-gbm_table <- bal.stat(stratum_working_gbm, estimand = "ATT", w.all = stratum_working_gbm$gbm_norm_weight,
+stratum_gbm$gbm_weight <- stratum_gbm$w / mean(stratum_gbm$w)
+gbm_table <- bal.stat(stratum_gbm, estimand = "ATT", w.all = stratum_gbm$gbm_weight,
                      vars = cov_names_final, sampw = 1, get.ks = FALSE,
                      treat.var = "surgerytype", multinom = FALSE)
 
@@ -644,7 +642,7 @@ summary(abs(gbm_table$results[, 5]))
 
 ### Estimation of treatment effect
 
-final_design <- svydesign(ids = ~0, weights = stratum_working$norm_norm_weight, data = stratum_working)
+final_design <- svydesign(ids = ~0, weights = stratum$norm_weight, data = stratum)
 final_design_boot <- as.svrepdesign(final_design, type = c("bootstrap"), replicates = 2000)
 model_boot <- svyglm(died ~ factor(surgerytype) + severe + cognitivedecline + depression + cancer + 
                             autoimmune + transferedin + age + sex + yearseducation + 
@@ -662,7 +660,7 @@ outcome_strat
 sens_strat <- treatSens(formula = died ~ surgerytype + p_scores + 
                          I(p_scores ^ 2) + I(p_scores ^ 3), resp.family = binomial(),
                       trt.family = binomial(link = "probit"), grid.dim = c(5, 5), nsim = 20, 
-                      weights = stratum_working$norm_norm_weight, data = stratum_working)
+                      weights = stratum$norm_weight, data = stratum)
 
 
 #================================Propensity scores matching==========================#
