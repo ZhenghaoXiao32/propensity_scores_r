@@ -9,4 +9,4 @@
 - [ ] Propensity scores matching for ATE
 
 ## Maintenances
-- [ ] Fix unclear variable names in stratification part
+- [x] Fix unclear variable names in stratification part
