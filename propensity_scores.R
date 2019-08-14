@@ -66,16 +66,16 @@ summary(imputed_data)
 # have a look of the imputed data:
 imputed_data$imp$kg
 
-complete_data1 <- complete(imputed_data, 1)
-complete_data2 <- complete(imputed_data, 2)
-complete_data3 <- complete(imputed_data, 3)
-complete_data4 <- complete(imputed_data, 4)
-complete_data5 <- complete(imputed_data, 5)
+imputed_data1 <- complete(imputed_data, 1)
+imputed_data2 <- complete(imputed_data, 2)
+imputed_data3 <- complete(imputed_data, 3)
+imputed_data4 <- complete(imputed_data, 4)
+imputed_data5 <- complete(imputed_data, 5)
 
 #create a list of all imputed datasets
 #this object was specifically designed to be analyzed with the survey package
-all_imputations <- imputationList(list(complete_data1, complete_data2, complete_data3,
-                                       complete_data4, complete_data5))
+all_imputations <- imputationList(list(imputed_data1, imputed_data2, imputed_data3,
+                                       imputed_data4, imputed_data5))
 
 #=========================Get ropensity cores==============================================#
 ### after imputation finished, we can first use logistic regression to get propensity scores
@@ -88,22 +88,22 @@ ps_formula
 
 # since our data has no strata no clusters, we can just use the glm function
 # let's start with 1st imputation data:
-ps_model1 <- glm(ps_formula, data = complete_data1, family = "binomial")
+ps_model1 <- glm(ps_formula, data = imputed_data1, family = "binomial")
 # have a look on the ps model summary 
 (sum_1 <- summary(ps_model1))
 
 # some of the predictors are not significant, we may decide to remove them.
 # yeadeducaiton is just at verge, we can test it with other imputation data
-ps_model2 <- glm(ps_formula, data = complete_data2, family = "binomial")
+ps_model2 <- glm(ps_formula, data = imputed_data2, family = "binomial")
 (sum_2 <- summary(ps_model2))
 
-ps_model3 <- glm(ps_formula, data = complete_data3, family = "binomial")
+ps_model3 <- glm(ps_formula, data = imputed_data3, family = "binomial")
 (sum_3 <- summary(ps_model3))
 
-ps_model4 <- glm(ps_formula, data = complete_data4, family = "binomial")
+ps_model4 <- glm(ps_formula, data = imputed_data4, family = "binomial")
 (sum_4 <- summary(ps_model4))
 
-ps_model5 <- glm(ps_formula, data = complete_data5, family = "binomial")
+ps_model5 <- glm(ps_formula, data = imputed_data5, family = "binomial")
 (sum_5 <- summary(ps_model5))
 
 # as a result, yearseducation is significant in 2 of the 5 models
@@ -126,11 +126,11 @@ ps_formula_final <- paste(cov_names_final, collapse = "+")
 ps_formula_final <- formula(paste("surgerytype ~ ", ps_formula_final, sep = ""))
 ps_formula_final
 
-ps_model_final1 <- glm(ps_formula_final, data = complete_data1, family = "binomial")
+ps_model_final1 <- glm(ps_formula_final, data = imputed_data1, family = "binomial")
 summary(ps_model_final1)
 ### get propensity scores from logistic regression
 p_score1 <- fitted(ps_model_final1)
-complete_data1$p_scores <- p_score1
+imputed_data1$p_scores <- p_score1
 
 
 #now let's do it with all imputaion data:
@@ -154,7 +154,7 @@ str(all_imputations)
 table(patient_adj$died)
 table(patient_adj$surgerytype)
 
-my_ctree <- ctree(ps_formula_final, data = complete_data1)
+my_ctree <- ctree(ps_formula_final, data = imputed_data1)
 plot(my_ctree)
 
 
@@ -166,77 +166,77 @@ sqrt(ncol(patient) - 1)
 # random forest
 set.seed(2019)
 my_controls <- cforest_unbiased(ntree = 1000, mtry = 5)
-my_cforest <- cforest(ps_formula_final, data = complete_data1, controls = my_controls)
+my_cforest <- cforest(ps_formula_final, data = imputed_data1, controls = my_controls)
 
 p_score_rf <- predict(my_cforest, type = "prob")
-complete_data1$p_score_rf <- matrix(unlist(p_score_rf), , 2, byrow = TRUE)[, 2]
-str(complete_data1)
+imputed_data1$p_score_rf <- matrix(unlist(p_score_rf), , 2, byrow = TRUE)[, 2]
+str(imputed_data1)
 
 ## generalize boosted modeling 
 # for complete data 1
 # first we need to convert our treatment variable back to numeric for ps function
 set.seed(2019)
-complete_data1$surgerytype <- as.numeric(complete_data1$surgerytype == 1)
-my_gbm <- ps(ps_formula_final, data = complete_data1, n.trees = 10000, interaction.depth = 4,
+imputed_data1$surgerytype <- as.numeric(imputed_data1$surgerytype == 1)
+my_gbm <- ps(ps_formula_final, data = imputed_data1, n.trees = 10000, interaction.depth = 4,
              stop.method = c("es.max"), estimand = "ATT", verbose = TRUE)
 summary(my_gbm)
 plot(my_gbm)
 p_score_gbm <- my_gbm$ps
 names(p_score_gbm) = "p_score_gbm"
-complete_data1$p_score_gbm <- unlist(p_score_gbm)
+imputed_data1$p_score_gbm <- unlist(p_score_gbm)
 
-str(complete_data1[, 26:28])
+str(imputed_data1[, 26:28])
 # I didn't convert the propensity scores to linear propensity scores,
 # because the advantage in using linear propensity scores is for matching,
 # but I'm only using weighting and stratification.
 
 
 ## factor treatment variable back
-complete_data1$surgerytype <- factor(complete_data1$surgerytype)
-str(complete_data1)
+imputed_data1$surgerytype <- factor(imputed_data1$surgerytype)
+str(imputed_data1)
 ### evaluation of common support:
 # for the impuatation data 1:
 
 # descriptive statistics:
 
-with(complete_data1, by(p_scores, surgerytype, summary))
-with(complete_data1, by(p_score_rf, surgerytype, summary))
-with(complete_data1, by(p_score_gbm, surgerytype, summary))
+with(imputed_data1, by(p_scores, surgerytype, summary))
+with(imputed_data1, by(p_score_rf, surgerytype, summary))
+with(imputed_data1, by(p_score_gbm, surgerytype, summary))
 
 
-by(complete_data1[, 26:28], complete_data1$surgerytype, summary)
+by(imputed_data1[, 26:28], imputed_data1$surgerytype, summary)
 #From the statistics, we can find that propensity scores getting 
 # from logistic regression has best common support.
 
 # graphical checks:
 # for logistic regression
-bwplot(p_scores ~ surgerytype, data = complete_data1, 
+bwplot(p_scores ~ surgerytype, data = imputed_data1, 
        ylab = "Propensity Scores by logistic regression",
        xlab = "Surgery Type", auto.key = TRUE)
 
-complete_data1 %>%
+imputed_data1 %>%
       ggplot(aes(x = p_scores)) +
       geom_histogram(color = "white") +
       facet_wrap(~ surgerytype) +
       xlab("Probability of surgery type: PS")
 
 # for random forest
-bwplot(p_score_rf ~ surgerytype, data = complete_data1, 
+bwplot(p_score_rf ~ surgerytype, data = imputed_data1, 
        ylab = "Propensity Scores by random forest",
        xlab = "Surgery Type", auto.key = TRUE)
 
-complete_data1 %>%
+imputed_data1 %>%
    ggplot(aes(x = p_score_rf)) +
    geom_histogram(color = "white") +
    facet_wrap(~ surgerytype) +
    xlab("Probability of surgery type: PS")
 
 # for generalize boosted modeling
-bwplot(p_score_gbm ~ surgerytype, data = complete_data1, 
+bwplot(p_score_gbm ~ surgerytype, data = imputed_data1, 
        ylab = "Propensity Scores by generalized boosted modeling",
        xlab = "Surgery Type", auto.key = TRUE)
 
-complete_data1 %>%
+imputed_data1 %>%
    ggplot(aes(x = p_score_gbm)) +
    geom_histogram(color = "white") +
    facet_wrap(~ surgerytype) +
@@ -245,19 +245,19 @@ complete_data1 %>%
 # compare them
 densityplot( ~ p_scores, groups = surgerytype, plot.points = FALSE, 
              xlim = c(0,1), lwd = 2,
-             data = complete_data1,  
+             data = imputed_data1,  
              ylab = "Propensity Scores by logistic regression", 
              xlab = "Treatment",auto.key = TRUE)
 
 densityplot( ~ p_score_rf, groups = surgerytype, plot.points = FALSE, 
              xlim = c(0,1), lwd = 2,
-             data = complete_data1,  
+             data = imputed_data1,  
              ylab = "Propensity Scores by random forest", 
              xlab = "Treatment",auto.key = TRUE)
 
 densityplot( ~ p_score_gbm, groups = surgerytype, plot.points = FALSE, 
              xlim = c(0,1), lwd = 2,
-             data = complete_data1,  
+             data = imputed_data1,  
              ylab = "Propensity Scores by generalized boosted modeling", 
              xlab = "Treatment",auto.key = TRUE)
 ## from the comparison we can conclude that 
@@ -285,20 +285,20 @@ bwplot(p_scores ~ surgerytype | imputation, data = all_imputations_stacked, lwd 
 ## for single imputation data:
 # for propensity scores from logistic regression 
 # ATT weights
-complete_data1$weight_att <- with(complete_data1, 
+imputed_data1$weight_att <- with(imputed_data1, 
                                   ifelse(surgerytype == 1, 1, p_scores/(1 - p_scores)))
 
-with(complete_data1, by(weight_att, surgerytype, summary))
+with(imputed_data1, by(weight_att, surgerytype, summary))
 
 # ATE weights
-complete_data1$weight_ate <- with(complete_data1, 
+imputed_data1$weight_ate <- with(imputed_data1, 
                                   ifelse(surgerytype == 1, 1/p_scores, 1/(1 - p_scores)))
 
-with(complete_data1, by (weight_ate, surgerytype, summary))
+with(imputed_data1, by (weight_ate, surgerytype, summary))
 
 ## balance table for ATT weight
-balance_table1 <- bal.stat(complete_data1, vars = cov_names_final,
-                          treat.var = "surgerytype", w.all = complete_data1$weight_att,
+balance_table1 <- bal.stat(imputed_data1, vars = cov_names_final,
+                          treat.var = "surgerytype", w.all = imputed_data1$weight_att,
                           get.ks = FALSE, sampw = 1, estimand = "ATT", multinom = FALSE)
 # I cut off test statistics from the balance table result 
 # because it is not recommended: first because covariate balance is a property of 
@@ -314,28 +314,28 @@ summary(abs(balance_table1$results[, 5]))
 
 
 ## balance table for ATE weight
-balance_table2 <- bal.stat(complete_data1, vars = cov_names_final,
-                          treat.var = "surgerytype", w.all = complete_data1$weight_ate,
+balance_table2 <- bal.stat(imputed_data1, vars = cov_names_final,
+                          treat.var = "surgerytype", w.all = imputed_data1$weight_ate,
                           get.ks = FALSE, sampw = 1, estimand = "ATE", multinom = FALSE)
 
 round(balance_table2$results[, 1:5], 3)
 summary(abs(balance_table2$results[, 5]))
 ## for ps from random forest
 ## ATT weights
-complete_data1$weight_att_rf <- with(complete_data1, 
+imputed_data1$weight_att_rf <- with(imputed_data1, 
                                   ifelse(surgerytype == 1, 1, p_score_rf/(1 - p_score_rf)))
 
-with(complete_data1, by(weight_att_rf, surgerytype, summary))
+with(imputed_data1, by(weight_att_rf, surgerytype, summary))
 
 # ATE weights
-complete_data1$weight_ate_rf <- with(complete_data1, 
+imputed_data1$weight_ate_rf <- with(imputed_data1, 
                                   ifelse(surgerytype == 1, 1/p_score_rf, 1/(1 - p_score_rf)))
 
-with(complete_data1, by (weight_ate_rf, surgerytype, summary))
+with(imputed_data1, by (weight_ate_rf, surgerytype, summary))
 
 # balance table for ATT rf weights
-balance_table3 <- bal.stat(complete_data1, vars = cov_names_final,
-                           treat.var = "surgerytype", w.all = complete_data1$weight_att_rf,
+balance_table3 <- bal.stat(imputed_data1, vars = cov_names_final,
+                           treat.var = "surgerytype", w.all = imputed_data1$weight_att_rf,
                            get.ks = FALSE, sampw = 1, estimand = "ATT", multinom = FALSE)
 
 round(balance_table3$results[, 1:5], 3)
@@ -343,8 +343,8 @@ summary(abs(balance_table3$results[, 5]))
 # reach balance in ATT 
 
 # balance table for ATE rf weights
-balance_table4 <- bal.stat(complete_data1, vars = cov_names_final,
-                           treat.var = "surgerytype", w.all = complete_data1$weight_ate_rf,
+balance_table4 <- bal.stat(imputed_data1, vars = cov_names_final,
+                           treat.var = "surgerytype", w.all = imputed_data1$weight_ate_rf,
                            get.ks = FALSE, sampw = 1, estimand = "ATE", multinom = FALSE)
 
 round(balance_table4$results[, 1:5], 3)
@@ -353,20 +353,20 @@ summary(abs(balance_table4$results[, 5]))
 
 ### for ps from gbm
 ## ATT weights
-complete_data1$weight_att_gbm <- with(complete_data1, 
+imputed_data1$weight_att_gbm <- with(imputed_data1, 
                                      ifelse(surgerytype == 1, 1, p_score_gbm/(1 - p_score_gbm)))
 
-with(complete_data1, by(weight_att_gbm, surgerytype, summary))
+with(imputed_data1, by(weight_att_gbm, surgerytype, summary))
 
 # ATE weights
-complete_data1$weight_ate_gbm <- with(complete_data1, 
+imputed_data1$weight_ate_gbm <- with(imputed_data1, 
                                      ifelse(surgerytype == 1, 1/p_score_gbm, 1/(1 - p_score_gbm)))
 
-with(complete_data1, by (weight_ate_gbm, surgerytype, summary))
+with(imputed_data1, by (weight_ate_gbm, surgerytype, summary))
 
 # balance table for ATT gbm weights
-balance_table5 <- bal.stat(complete_data1, vars = cov_names_final,
-                           treat.var = "surgerytype", w.all = complete_data1$weight_att_gbm,
+balance_table5 <- bal.stat(imputed_data1, vars = cov_names_final,
+                           treat.var = "surgerytype", w.all = imputed_data1$weight_att_gbm,
                            get.ks = FALSE, sampw = 1, estimand = "ATT", multinom = FALSE)
 
 round(balance_table5$results[, 1:5], 3)
@@ -374,8 +374,8 @@ summary(abs(balance_table5$results[, 5]))
 # reached balance in ATT 
 
 # balance table for ATE gbm weights
-balance_table6 <- bal.stat(complete_data1, vars = cov_names_final,
-                           treat.var = "surgerytype", w.all = complete_data1$weight_ate_gbm,
+balance_table6 <- bal.stat(imputed_data1, vars = cov_names_final,
+                           treat.var = "surgerytype", w.all = imputed_data1$weight_ate_gbm,
                            get.ks = FALSE, sampw = 1, estimand = "ATE", multinom = FALSE)
 
 round(balance_table6$results[, 1:5], 3)
@@ -388,8 +388,8 @@ summary(abs(balance_table6$results[, 5]))
 
 ### estimation of treatment effects
 ## ATT 
-svy_design_att <- svydesign(ids = ~0, weights = complete_data1$weight_att,
-                        data = complete_data1)
+svy_design_att <- svydesign(ids = ~0, weights = imputed_data1$weight_att,
+                        data = imputed_data1)
 
 svy_design_boot_att <- as.svrepdesign(svy_design_att, type = c("bootstrap"), replicates = 2000)
 
@@ -425,8 +425,8 @@ outcome_att_boot
 
 # we can see that the results are very close
 ## ATE 
-svy_design_ate <- svydesign(ids = ~0, weights = complete_data1$weight_ate,
-                            data = complete_data1)
+svy_design_ate <- svydesign(ids = ~0, weights = imputed_data1$weight_ate,
+                            data = imputed_data1)
 
 svy_design_boot_ate <- as.svrepdesign(svy_design_ate, type = c("bootstrap"), replicates = 2000)
 
@@ -490,7 +490,7 @@ summary(result_model_mi_ate)
 sens_att <- treatSens(formula = died ~ surgerytype + p_scores + 
                      I(p_scores ^ 2) + I(p_scores ^ 3), resp.family = binomial(),
                   trt.family = binomial(link = "probit"), grid.dim = c(5, 5), nsim = 20, 
-                  weights = complete_data1$weight_att, data = complete_data1)
+                  weights = imputed_data1$weight_att, data = imputed_data1)
 ?treatSens
 # I tried to build a sensitivity analysis, 
 # but for now, the treatSens function can only deal with continuous ourcome variable
@@ -502,9 +502,9 @@ sens_att <- treatSens(formula = died ~ surgerytype + p_scores +
 # Stratification of ATT with logistic regression propensity scores
 
 # we need to coerce the treatment variable to numeric again
-complete_data1$surgerytype <- as.numeric(complete_data1$surgerytype == 1)
-stratification <- matchit(ps_formula_final, distance = complete_data1$p_scores,
-                          data = complete_data1, method = "subclass", sub.by = "treat",
+imputed_data1$surgerytype <- as.numeric(imputed_data1$surgerytype == 1)
+stratification <- matchit(ps_formula_final, distance = imputed_data1$p_scores,
+                          data = imputed_data1, method = "subclass", sub.by = "treat",
                           subclass = 5)
 
 stratification
@@ -517,8 +517,8 @@ summary(strat_diff)
 # we can use marginal mean weighting through stratification to mitigate this problem
 
 # Stratification of ATT with random forest propensity scores
-stratification_rf <- matchit(ps_formula_final, distance = complete_data1$p_score_rf,
-                          data = complete_data1, method = "subclass", sub.by = "treat",
+stratification_rf <- matchit(ps_formula_final, distance = imputed_data1$p_score_rf,
+                          data = imputed_data1, method = "subclass", sub.by = "treat",
                           subclass = 5)
 
 stratification_rf
@@ -530,8 +530,8 @@ summary(strat_diff_rf)
 # Well the performance is even worser compared with logistic regression propensity scores
 
 # Stratification of ATT with generalize boosted modeling propensity scores:
-stratification_gbm <- matchit(ps_formula_final, distance = complete_data1$p_score_gbm,
-                             data = complete_data1, method = "subclass", sub.by = "treat",
+stratification_gbm <- matchit(ps_formula_final, distance = imputed_data1$p_score_gbm,
+                             data = imputed_data1, method = "subclass", sub.by = "treat",
                              subclass = 5)
 
 stratification_gbm
@@ -542,8 +542,8 @@ summary(strat_diff_gbm)
 # seems like the gbm method generates the best result in covariate balance
 # we can just try to improve the subclass numbers to see if it can reach the loose
 # criterion in all subclasses which is 0.25
-stratification_gbm1 <- matchit(ps_formula_final, distance = complete_data1$p_score_gbm,
-                              data = complete_data1, method = "subclass", sub.by = "treat",
+stratification_gbm1 <- matchit(ps_formula_final, distance = imputed_data1$p_score_gbm,
+                              data = imputed_data1, method = "subclass", sub.by = "treat",
                               subclass = 8)
 balance_stratification_gbm1 <- summary(stratification_gbm1, standardize = TRUE)
 strat_diff_gbm1 <- data.frame(balance_stratification_gbm1$q.table[, 3, ])
