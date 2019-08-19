@@ -43,6 +43,13 @@ Before we get started with propensity scores, we still need to know about the ty
 
 In experimental designs, the ATE is euqal to the ATT and the ATC because of the balance achieved by random assignment. But in quasi-experimental design, these values could differ substantially. So, what type of treatment effect we can research in quasi-experimental design is depended on whether we achieved balance in the particular group.
 
+## Propensity Scores
+
+## Propensity Scores Matching
+
+## Propensity Scores Weighting
+
+## Propensity Scores stratification
 
 ## Contents
 - [x] Propensity scores weighting for ATT
