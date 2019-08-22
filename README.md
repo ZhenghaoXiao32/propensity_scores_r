@@ -61,3 +61,6 @@ In experimental designs, the ATE is euqal to the ATT and the ATC because of the 
 
 ## Maintenances
 - [x] Fix unclear variable names in stratification part
+
+## License
+The contents of this repository are covered under the [MIT License](LICENSE).
